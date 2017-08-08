@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 
 """
 Code to load an expert policy and generate roll-out data for behavioral cloning.
@@ -15,6 +15,9 @@ import numpy as np
 import tf_util
 import gym
 import load_policy
+import matplotlib.pyplot as plt
+from tensorflow.contrib import layers
+import os
 
 def main():
     import argparse
@@ -41,12 +44,16 @@ def main():
         returns = []
         observations = []
         actions = []
+        num_steps = []
         for i in range(args.num_rollouts):
             print('iter', i)
             obs = env.reset()
+            print(obs.shape)
             done = False
             totalr = 0.
             steps = 0
+
+
             while not done:
                 action = policy_fn(obs[None,:])
                 observations.append(obs)
@@ -60,13 +67,24 @@ def main():
                 if steps >= max_steps:
                     break
             returns.append(totalr)
+            num_steps.append(steps)
 
         print('returns', returns)
         print('mean return', np.mean(returns))
         print('std of return', np.std(returns))
 
         expert_data = {'observations': np.array(observations),
-                       'actions': np.array(actions)}
+                       'actions': np.array(actions),
+                       'return': np.array(returns),
+                       'n_steps': np.array(num_steps)}
+        print(expert_data['observations'][0].shape)
+        print(expert_data['actions'][0].shape)
+
+        if 'exp_data' not in os.listdir('.'):
+            os.makedirs('./exp_data')
+        pickle.dump(expert_data, open('./exp_data/{}.pkl'.format(args.envname), 'wb'))
+
+
 
 if __name__ == '__main__':
     main()
